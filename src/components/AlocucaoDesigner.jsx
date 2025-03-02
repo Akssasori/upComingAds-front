@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Info, Upload, Play, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Info, Upload, Play, Pause, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AlocucaoDesigner = () => {
   const [criarAlocucao, setCriarAlocucao] = useState(false);
@@ -14,17 +14,28 @@ const AlocucaoDesigner = () => {
   const [loading, setLoading] = useState(false);
   const [locucaoGerada, setLocucaoGerada] = useState('');
   const [erroApi, setErroApi] = useState('');
+
+  // Referência e estado para o controle de áudio
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   // Dados simulados
   const locutores = [
-    { id: 1, nome: 'João Silva' },
-    { id: 2, nome: 'Maria Oliveira' },
-    { id: 3, nome: 'Pedro Santos' },
-    { id: 4, nome: 'Ana Pereira' }
+    { id: 1, nome: 'Ligia', uuid:'6x8ch2QacbiwlJdYqYSb' },
+    { id: 2, nome: 'Luciano Hulk', uuid:'6x8ch2QacbiwlJdYqYSb' },
+    { id: 3, nome: 'Thiago Silva', uuid:'DSoWrn9GzoeY4u0knKuw' },
+    { id: 4, nome: 'Ana Pereira', uuid:'DSoWr' }
   ];
   
+  // Música local específica
+  const musicaLocal = {
+    id: 1,
+    nome: 'Trilha Sonora',
+    caminho: '/trilhaSonora.mp3'
+  };
+
   const musicas = [
-    { id: 1, nome: 'Música Clássica Suave' },
+    musicaLocal,
     { id: 2, nome: 'Música Corporativa Moderna' },
     { id: 3, nome: 'Música Inspiradora' }
   ];
@@ -42,10 +53,71 @@ const AlocucaoDesigner = () => {
     setLogo('logo-simulado.png');
   };
   
-  const reproduzirMusica = (musicaId) => {
-    // Simulação de reprodução de música
-    console.log(`Reproduzindo música ${musicaId}`);
-  };
+  // const reproduzirMusica = (musicaId) => {
+  //   // Simulação de reprodução de música
+  //   console.log(`Reproduzindo música ${musicaId}`);
+  // };
+
+    // Função para reproduzir ou pausar a música
+    const toggleMusica = (musicaId) => {
+      console.log("Toggle música:", musicaId);
+      // Se for a música local
+      if (musicaId === musicaLocal.id) {
+        if (!audioRef.current) {
+          try {
+            console.log("Iniciando áudio local:", musicaLocal.caminho);
+            // Criação do objeto de áudio
+            audioRef.current = new Audio(musicaLocal.caminho);
+            
+            // Adiciona evento para quando a música terminar
+            audioRef.current.addEventListener('ended', () => {
+              setIsPlaying(false);
+            });
+            
+            // Reproduz o áudio
+            audioRef.current.play()
+              .then(() => {
+                setIsPlaying(true);
+                console.log("Reproduzindo música local:", musicaLocal.caminho);
+              })
+              .catch(error => {
+                console.error("Erro ao reproduzir áudio:", error);
+                alert("Não foi possível reproduzir o arquivo de áudio local. Verifique se o caminho está correto e se o navegador tem permissão para acessar arquivos locais.");
+              });
+          } catch (error) {
+            console.error("Erro detalhado:", error.message, error.name);
+            alert(`Erro ao reproduzir: ${error.message}`);
+          }
+        } else {
+          // Se o áudio já está inicializado, alterna entre reproduzir e pausar
+          if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+          } else {
+            audioRef.current.play()
+              .then(() => {
+                setIsPlaying(true);
+              })
+              .catch(error => {
+                console.error("Erro ao reproduzir áudio:", error);
+              });
+          }
+        }
+      } else {
+        // Para outras músicas (simulação)
+        console.log(`Reproduzindo música ${musicaId}`);
+      }
+    };
+    
+    // Limpa o áudio quando o componente for desmontado
+    React.useEffect(() => {
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+      };
+    }, []);
   
   const avancarVideo = () => {
     setVideoAtual((prev) => (prev === videos.length - 1 ? 0 : prev + 1));
@@ -89,11 +161,11 @@ const AlocucaoDesigner = () => {
   };
 
   // Função para limpar a locução gerada e permitir gerar uma nova
-  const handleRegenarLocucao = () => {
-    setLocucaoGerada('');
+  // const handleRegenarLocucao = () => {
+  //   setLocucaoGerada('');
     // Opcionalmente: Manter o texto atual ou limpar
     // setTexto('');
-  };
+  // };
   
   const enviarParaBackend = () => {
     const dados = {
@@ -110,7 +182,7 @@ const AlocucaoDesigner = () => {
   
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h1 className="text-2xl font-bold mb-6 text-center">Designer de Alocução</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">upComingAds</h1>
       
       <div className="mb-6">
         <div className="flex items-center mb-4">
@@ -163,14 +235,6 @@ const AlocucaoDesigner = () => {
               {loading ? "Gerando..." : locucaoGerada ? "Gerar Novamente" : "Gerar Locução"}
             </button>
             
-            {/* {locucaoGerada && (
-              <button
-                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
-                onClick={handleRegenarLocucao}
-              >
-                Regerar Locução
-              </button>
-            )} */}
           </div>
 
           {/* Área para exibir a locução gerada */}
@@ -225,16 +289,23 @@ const AlocucaoDesigner = () => {
                 >
                   <div className="flex items-center">
                     <span>{musica.nome}</span>
+                    {musica.id === musicaLocal.id && (
+                      <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Local</span>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <button
                       className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
                       onClick={(e) => {
                         e.stopPropagation();
-                        reproduzirMusica(musica.id);
+                        toggleMusica(musica.id);
                       }}
                     >
-                      <Play size={16} />
+                      {musica.id === musicaLocal.id && isPlaying ? (
+                        <Pause size={16} />
+                      ) : (
+                        <Play size={16} />
+                      )}
                     </button>
                     {musicaSelecionada === musica.id && (
                       <div className="text-blue-500">
@@ -245,6 +316,14 @@ const AlocucaoDesigner = () => {
                 </div>
               ))}
             </div>
+            
+            {/* Nota informativa sobre arquivo local */}
+            {musicas.some(m => m.id === musicaLocal.id) && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 text-sm text-yellow-700 rounded">
+                <strong>Nota:</strong> A reprodução de arquivos locais pode requerer configurações especiais do navegador.
+                Se o arquivo não reproduzir, verifique se o navegador tem permissão para acessar arquivos locais.
+              </div>
+            )}
           </div>
           
           {/* Carrossel de vídeos */}
