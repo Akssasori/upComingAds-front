@@ -9,6 +9,11 @@ const AlocucaoDesigner = () => {
   const [videoSelecionado, setVideoSelecionado] = useState(null);
   const [logo, setLogo] = useState(null);
   const [videoAtual, setVideoAtual] = useState(0);
+
+  // Estados adicionados para o request da API e exibição da resposta
+  const [loading, setLoading] = useState(false);
+  const [locucaoGerada, setLocucaoGerada] = useState('');
+  const [erroApi, setErroApi] = useState('');
   
   // Dados simulados
   const locutores = [
@@ -48,6 +53,46 @@ const AlocucaoDesigner = () => {
   
   const voltarVideo = () => {
     setVideoAtual((prev) => (prev === 0 ? videos.length - 1 : prev - 1));
+  };
+
+  // Função para enviar o texto para a API e obter a locução gerada
+  const handleGerarLocucao = async () => {
+    if (!texto.trim()) {
+      setErroApi('Por favor, digite um texto para gerar a locução.');
+      return;
+    }
+    
+    setLoading(true);
+    setErroApi('');
+    
+    try {
+      const response = await fetch('http://localhost:8970/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ texto }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setLocucaoGerada(data.resposta || data.message || JSON.stringify(data));
+    } catch (error) {
+      console.error("Erro ao gerar locução:", error);
+      setErroApi(`Falha ao conectar com a API: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para limpar a locução gerada e permitir gerar uma nova
+  const handleRegenarLocucao = () => {
+    setLocucaoGerada('');
+    // Opcionalmente: Manter o texto atual ou limpar
+    // setTexto('');
   };
   
   const enviarParaBackend = () => {
@@ -107,6 +152,43 @@ const AlocucaoDesigner = () => {
               placeholder="Digite o texto que será falado pelo locutor..."
             />
           </div>
+
+          {/* Botões para gerar/regenerar locução */}
+          <div className="flex space-x-4 mb-6">
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300"
+              onClick={handleGerarLocucao}
+              disabled={loading || !texto.trim()}
+            >
+              {loading ? "Gerando..." : locucaoGerada ? "Gerar Novamente" : "Gerar Locução"}
+            </button>
+            
+            {/* {locucaoGerada && (
+              <button
+                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
+                onClick={handleRegenarLocucao}
+              >
+                Regerar Locução
+              </button>
+            )} */}
+          </div>
+
+          {/* Área para exibir a locução gerada */}
+          {locucaoGerada && (
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
+              <h3 className="font-medium mb-2">Locução Gerada:</h3>
+              <div className="p-3 bg-white border border-gray-300 rounded-md">
+                {locucaoGerada}
+              </div>
+            </div>
+          )}
+          
+          {/* Mensagem de erro da API */}
+          {erroApi && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md">
+              {erroApi}
+            </div>
+          )}
           
           {/* Seleção de locutor */}
           <div className="mb-6">
