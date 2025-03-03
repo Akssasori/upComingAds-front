@@ -8,6 +8,8 @@ const AlocucaoDesigner = () => {
   const [musicaSelecionada, setMusicaSelecionada] = useState(null);
   const [videoSelecionado, setVideoSelecionado] = useState(null);
   const [logo, setLogo] = useState(null);
+  const [fileType, setFileType] = useState(null);
+  const [fileName, setFileName] = useState(''); // Nome do arquivo para exibição
   const [videoAtual, setVideoAtual] = useState(0);
 
   // Estados adicionados para o request da API e exibição da resposta
@@ -39,18 +41,31 @@ const AlocucaoDesigner = () => {
     { id: 2, nome: 'Música Corporativa Moderna' },
     { id: 3, nome: 'Música Inspiradora' }
   ];
+
+  // Vídeo local específica
+  const videoLocal = {
+    id: 1,
+    nome: 'Template',
+    thumbnail: '/template.jpg',
+    videoPath: '/template.mp4'
+  };
   
   const videos = [
-    { id: 1, nome: 'Video Corporativo 1', thumbnail: '/api/placeholder/240/135' },
-    { id: 2, nome: 'Video Natureza', thumbnail: '/api/placeholder/240/135' },
-    { id: 3, nome: 'Video Tecnologia', thumbnail: '/api/placeholder/240/135' },
-    { id: 4, nome: 'Video Abstrato', thumbnail: '/api/placeholder/240/135' },
-    { id: 5, nome: 'Video Cidade', thumbnail: '/api/placeholder/240/135' }
+    videoLocal,
+    { id: 2, nome: 'Video Natureza', thumbnail: '/api/placeholder/240/135', videoPath: '/video-natureza.mp4'},
+    { id: 3, nome: 'Video Tecnologia', thumbnail: '/api/placeholder/240/135', videoPath: '/video-tecnologia.mp4'},
+    { id: 4, nome: 'Video Abstrato', thumbnail: '/api/placeholder/240/135', videoPath: '/video-abstrato.mp4' },
+    { id: 5, nome: 'Video Cidade', thumbnail: '/api/placeholder/240/135', videoPath: '/video-cidade.mp4' }
   ];
   
   const handleLogoUpload = (e) => {
-    // Simula o upload de logo
-    setLogo('logo-simulado.png');
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) return;
+    
+    const fileUrl = URL.createObjectURL(uploadedFile);
+    setLogo(fileUrl);
+    setFileType(uploadedFile.type);
+    setFileName(uploadedFile.name);
   };
   
   // const reproduzirMusica = (musicaId) => {
@@ -167,17 +182,113 @@ const AlocucaoDesigner = () => {
     // setTexto('');
   // };
   
-  const enviarParaBackend = () => {
-    const dados = {
-      texto,
-      locutor: locutorSelecionado,
-      musica: musicaSelecionada,
-      video: videoSelecionado,
-      logo
-    };
+  const enviarParaBackend = async () => {
+    // Verifica se todos os campos necessários estão preenchidos
+    if (!texto || !locutorSelecionado || !musicaSelecionada || !videoSelecionado || !logo) {
+      alert("Por favor, preencha todos os campos antes de enviar.");
+      return;
+    }
     
-    console.log("Enviando para o backend:", dados);
-    alert("Alocução criada com sucesso!");
+    // Define o estado de carregamento
+    setLoading(true);
+    
+    try {
+      // Busca o locutor selecionado para obter o UUID
+      const locutorObj = locutores.find(loc => loc.id === parseInt(locutorSelecionado));
+      if (!locutorObj) {
+        throw new Error("Locutor não encontrado");
+      }
+      
+      // Busca o caminho da música
+      const musicaObj = musicas.find(mus => mus.id === musicaSelecionada);
+      const musicaCaminho = musicaObj?.caminho || ""; // Se não tiver caminho, envia string vazia
+      
+      // Busca o caminho do vídeo
+      const videoObj = videos.find(vid => vid.id === videoSelecionado);
+      const videoPath = videoObj?.videoPath || "";
+      
+      // Prepara o arquivo de logo para upload
+      let logoFile = null;
+      
+      // Verifica se é uma string URL (criada por URL.createObjectURL)
+      if (logo && logo.startsWith('blob:')) {
+        // Função auxiliar para converter Blob URL para File
+        const blobToFile = async (blobUrl, fileName) => {
+          const response = await fetch(blobUrl);
+          const blob = await response.blob();
+          return new File([blob], fileName, { type: blob.type });
+        };
+        
+        try {
+          logoFile = await blobToFile(logo, fileName || 'logo');
+        } catch (error) {
+          console.error("Erro ao converter blob para arquivo:", error);
+          throw new Error("Não foi possível processar o arquivo de logo");
+        }
+      }
+      
+      // Cria um objeto FormData para enviar os dados, incluindo o arquivo
+      const formData = new FormData();
+      formData.append('texto', texto);
+      formData.append('locutorUuid', locutorObj.uuid);
+      formData.append('musicaCaminho', musicaCaminho);
+      formData.append('videoPath', videoPath);
+      
+      if (logoFile) {
+        formData.append('logo', logoFile);
+      }
+      
+      // Envia os dados para a API
+      const response = await fetch('http://localhost:1993/create-video', {
+        method: 'POST',
+        body: formData, // Não defina Content-Type ao usar FormData, o navegador fará isso automaticamente
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Erro ao enviar dados: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Mostra mensagem de sucesso
+      alert("Alocução criada com sucesso! ID do vídeo: " + (result.videoId || "N/A"));
+      
+      // Opcionalmente: limpar o formulário ou redirecionar
+      // clearForm();
+      // ou
+      // window.location.href = `/video/${result.videoId}`;
+      
+    } catch (error) {
+      console.error("Erro ao enviar para o backend:", error);
+      alert(`Erro ao criar vídeo: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderPreview = () => {
+    if (!logo) return null;
+    
+    if (fileType && fileType.startsWith('video/')) {
+      return (
+        <video 
+          src={logo}
+          className="h-32 w-full object-contain mb-2" 
+          controls
+          autoPlay 
+          muted
+        />
+      );
+    } else {
+      return (
+        <img
+          src={logo}
+          alt="Preview do arquivo"
+          className="h-32 w-full object-contain mb-2"
+        />
+      );
+    }
   };
   
   return (
@@ -341,10 +452,13 @@ const AlocucaoDesigner = () => {
                 </button>
                 
                 <div className="relative">
-                  <img
-                    src={videos[videoAtual].thumbnail}
-                    alt={videos[videoAtual].nome}
+                  <video
+                    src={`/${videos[videoAtual].nome.toLowerCase().replace(/\s+/g, '-')}.mp4`}
+                    poster={videos[videoAtual].thumbnail}
                     className="h-48 w-full object-cover rounded-md"
+                    autoPlay
+                    muted
+                    loop
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
                     {videos[videoAtual].nome}
@@ -378,20 +492,24 @@ const AlocucaoDesigner = () => {
           {/* Upload de logo */}
           <div className="mb-6">
             <label className="block text-sm font-medium mb-2">
-              Importar Logo
+              Importar Logo ou Mídia
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
               {logo ? (
                 <div className="flex flex-col items-center">
-                  <img
-                    src="/api/placeholder/100/100"
-                    alt="Logo Preview"
-                    className="h-16 w-16 object-contain mb-2"
-                  />
-                  <span className="text-sm text-gray-500">{logo}</span>
+                  {/* Área de preview */}
+                  <div className="w-full mb-2">
+                    {renderPreview()}
+                  </div>
+                  <span className="text-sm text-gray-500">{fileName}</span>
                   <button
                     className="mt-2 text-red-500 text-sm"
-                    onClick={() => setLogo(null)}
+                    onClick={() => {
+                      URL.revokeObjectURL(logo); // Libera a URL do objeto
+                      setLogo(null);
+                      setFileType(null);
+                      setFileName('');
+                    }}
                   >
                     Remover
                   </button>
@@ -404,7 +522,7 @@ const AlocucaoDesigner = () => {
                   </p>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*, video/mp4"
                     onChange={handleLogoUpload}
                     className="hidden"
                     id="logo-upload"
@@ -424,10 +542,20 @@ const AlocucaoDesigner = () => {
           <div className="flex justify-center">
             <button
               onClick={enviarParaBackend}
-              className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 font-medium"
-              disabled={!texto || !locutorSelecionado || !musicaSelecionada || !videoSelecionado || !logo}
+              className="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={!texto || !locutorSelecionado || !musicaSelecionada || !videoSelecionado || !logo || loading}
             >
-              Gerar Video para exibição
+              {loading ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Enviando...
+                </div>
+              ) : (
+                "Gerar Video para exibição"
+              )}
             </button>
           </div>
         </>
