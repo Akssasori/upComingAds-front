@@ -572,3 +572,67 @@ const AlocucaoDesigner = () => {
 };
 
 export default AlocucaoDesigner;
+
+// import React, { useState, useRef, useEffect } from 'react';
+// import { Info, Upload, Play, Pause, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+// import TextAreaInput from './TextAreaInput';
+// import LoadingButton from './LoadingButton';
+// import ErrorMessage from './ErrorMessage';
+// import LocutorSelector from './LocutorSelector';
+// import MusicSelector from './MusicSelector';
+
+
+// const AlocucaoDesigner = () => {
+//   const [criarAlocucao, setCriarAlocucao] = useState(false);
+//   const [texto, setTexto] = useState('');
+//   const [locutorSelecionado, setLocutorSelecionado] = useState('');
+//   const [musicaSelecionada, setMusicaSelecionada] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [locucaoGerada, setLocucaoGerada] = useState('');
+//   const [erroApi, setErroApi] = useState('');
+//   const [isPlaying, setIsPlaying] = useState(false);
+
+//   const locutores = [
+//     { id: 1, nome: 'Ligia' },
+//     { id: 2, nome: 'Luciano Hulk' },
+//     { id: 3, nome: 'Thiago Silva' },
+//     { id: 4, nome: 'Ana Pereira' }
+//   ];
+
+//   const musicas = [
+//     { id: 1, nome: 'Trilha Sonora' },
+//     { id: 2, nome: 'Música Corporativa' },
+//     { id: 3, nome: 'Música Inspiradora' }
+//   ];
+
+//   const toggleMusica = (musicaId) => {
+//     setIsPlaying(prev => !prev);
+//     console.log(`Tocando música ${musicaId}`);
+//   };
+
+//   return (
+//     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+//       <h1 className="text-2xl font-bold mb-6 text-center">upComingAds</h1>
+//       <div className="mb-6">
+//         <h2 className="text-lg font-semibold">Deseja criar uma alocução?</h2>
+//         <label className="ml-4 inline-flex items-center">
+//           <input type="radio" checked={criarAlocucao} onChange={() => setCriarAlocucao(true)} className="h-4 w-4" /> Sim
+//         </label>
+//         <label className="ml-4 inline-flex items-center">
+//           <input type="radio" checked={!criarAlocucao} onChange={() => setCriarAlocucao(false)} className="h-4 w-4" /> Não
+//         </label>
+//       </div>
+//       {criarAlocucao && (
+//         <>
+//           <TextAreaInput texto={texto} setTexto={setTexto} />
+//           <LoadingButton isLoading={loading} onClick={() => console.log("Gerando locução...")} text="Gerar Locução" />
+//           <ErrorMessage message={erroApi} />
+//           <LocutorSelector locutorSelecionado={locutorSelecionado} setLocutorSelecionado={setLocutorSelecionado} locutores={locutores} />
+//           <MusicSelector musicas={musicas} musicaSelecionada={musicaSelecionada} setMusicaSelecionada={setMusicaSelecionada} toggleMusica={toggleMusica} isPlaying={isPlaying} />
+//         </>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default AlocucaoDesigner;
