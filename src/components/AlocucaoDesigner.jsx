@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Info, Upload, Play, Pause, Check, ChevronLeft,ChevronRight } from "lucide-react";
+import {
+  Info,
+  Upload,
+  Play,
+  Pause,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 // Componentes importados
 import ErrorMessage from "./ErrorMessage";
@@ -12,7 +20,7 @@ import LogoUploader from "./LogoUploader";
 
 const AlocucaoDesigner = () => {
   // Estados principais
-  const [criarAlocucao, setCriarAlocucao] = useState(false);
+  const [criarAlocucao, setCriarAlocucao] = useState(true);
   const [texto, setTexto] = useState("");
   const [locutorSelecionado, setLocutorSelecionado] = useState("");
   const [musicaSelecionada, setMusicaSelecionada] = useState(null);
@@ -94,7 +102,8 @@ const AlocucaoDesigner = () => {
             setIsPlaying(false);
           });
 
-          audioRef.current.play()
+          audioRef.current
+            .play()
             .then(() => {
               setIsPlaying(true);
             })
@@ -111,7 +120,8 @@ const AlocucaoDesigner = () => {
           audioRef.current.pause();
           setIsPlaying(false);
         } else {
-          audioRef.current.play()
+          audioRef.current
+            .play()
             .then(() => {
               setIsPlaying(true);
             })
@@ -190,7 +200,13 @@ const AlocucaoDesigner = () => {
 
   // Função para enviar dados ao backend
   const enviarParaBackend = async () => {
-    if (!texto || !locutorSelecionado || !musicaSelecionada || !videoSelecionado || !logo) {
+    if (
+      !texto ||
+      !locutorSelecionado ||
+      !musicaSelecionada ||
+      !videoSelecionado ||
+      !logo
+    ) {
       alert("Por favor, preencha todos os campos antes de enviar.");
       return;
     }
@@ -266,6 +282,13 @@ const AlocucaoDesigner = () => {
       setLoading(false);
     }
   };
+  // Função para remover logo
+  const handleRemoveLogo = () => {
+    URL.revokeObjectURL(logo);
+    setLogo(null);
+    setFileType(null);
+    setFileName("");
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
@@ -300,24 +323,14 @@ const AlocucaoDesigner = () => {
       {criarAlocucao ? (
         <>
           {/* Área de texto */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Me fale sobre seu produto, serviço e me diga o contexto da campanha publicitária e irei criar sua locução!
-            </label>
-            <textarea
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-md h-32"
-              placeholder="Digite o texto que será falado pelo locutor..."
-            />
-          </div>
+          <TextAreaInput texto={texto} setTexto={setTexto} />
 
           {/* Botões para gerar locução */}
           <div className="flex space-x-4 mb-6">
-            <LoadingButton 
-              isLoading={loading} 
-              onClick={handleGerarLocucao} 
-              text={locucaoGerada ? "Gerar Novamente" : "Gerar Locução"} 
+            <LoadingButton
+              isLoading={loading}
+              onClick={handleGerarLocucao}
+              text={locucaoGerada ? "Gerar Novamente" : "Gerar Locução"}
             />
           </div>
 
@@ -335,183 +348,48 @@ const AlocucaoDesigner = () => {
           <ErrorMessage message={erroApi} />
 
           {/* Seleção de locutor */}
-          <LocutorSelector 
+          <LocutorSelector
             locutorSelecionado={locutorSelecionado}
             setLocutorSelecionado={setLocutorSelecionado}
             locutores={locutores}
           />
 
           {/* Seleção de música */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Selecione uma Música de Fundo
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {musicas.map((musica) => (
-                <div
-                  key={musica.id}
-                  className={`p-4 border rounded-md cursor-pointer flex items-center justify-between ${
-                    musicaSelecionada === musica.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300"
-                  }`}
-                  onClick={() => setMusicaSelecionada(musica.id)}
-                >
-                  <div className="flex items-center">
-                    <span>{musica.nome}</span>
-                    {musica.id === musicaLocal.id && (
-                      <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        Local
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleMusica(musica.id);
-                      }}
-                    >
-                      {musica.id === musicaLocal.id && isPlaying ? (
-                        <Pause size={16} />
-                      ) : (
-                        <Play size={16} />
-                      )}
-                    </button>
-                    {musicaSelecionada === musica.id && (
-                      <div className="text-blue-500">
-                        <Check size={20} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <MusicSelector
+            musicas={musicas}
+            musicaSelecionada={musicaSelecionada}
+            setMusicaSelecionada={setMusicaSelecionada}
+            toggleMusica={toggleMusica}
+            isPlaying={isPlaying}
+            musicaLocal={musicaLocal}
+          />
 
-            {/* Nota informativa sobre arquivo local */}
-            {musicas.some((m) => m.id === musicaLocal.id) && (
-              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 text-sm text-yellow-700 rounded">
-                <strong>Nota:</strong> A reprodução de arquivos locais pode
-                requerer configurações especiais do navegador.
-              </div>
-            )}
-          </div>
+          {/* Nota informativa sobre arquivo local */}
+          {musicas.some((m) => m.id === musicaLocal.id) && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 text-sm text-yellow-700 rounded">
+              <strong>Nota:</strong> A reprodução de arquivos locais pode
+              requerer configurações especiais do navegador.
+            </div>
+          )}
 
           {/* Carrossel de vídeos */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Selecione um Vídeo de Fundo
-            </label>
-            <div className="relative">
-              <div className="flex justify-center items-center mb-2">
-                <button
-                  onClick={voltarVideo}
-                  className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 mr-2"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-
-                <div className="relative">
-                  <video
-                    src={videos[videoAtual].videoPath}
-                    poster={videos[videoAtual].thumbnail}
-                    className="h-48 w-full object-cover rounded-md"
-                    autoPlay
-                    muted
-                    loop
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center">
-                    {videos[videoAtual].nome}
-                  </div>
-                  {videoSelecionado === videos[videoAtual].id && (
-                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full p-1">
-                      <Check size={16} />
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={avancarVideo}
-                  className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 ml-2"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-
-              <div className="flex justify-center">
-                <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                  onClick={() => setVideoSelecionado(videos[videoAtual].id)}
-                >
-                  Selecionar Este Vídeo
-                </button>
-              </div>
-            </div>
-          </div>
+          <VideoCarousel
+            videos={videos}
+            videoAtual={videoAtual}
+            videoSelecionado={videoSelecionado}
+            setVideoSelecionado={setVideoSelecionado}
+            voltarVideo={voltarVideo}
+            avancarVideo={avancarVideo}
+          />
 
           {/* Upload de logo */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Importar Logo ou Mídia
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-              {logo ? (
-                <div className="flex flex-col items-center">
-                  {/* Área de preview */}
-                  <div className="w-full mb-2">
-                    {fileType && fileType.startsWith("video/") ? (
-                      <video
-                        src={logo}
-                        className="h-32 w-full object-contain mb-2"
-                        controls
-                        autoPlay
-                        muted
-                      />
-                    ) : (
-                      <img
-                        src={logo}
-                        alt="Preview do arquivo"
-                        className="h-32 w-full object-contain mb-2"
-                      />
-                    )}
-                  </div>
-                  <span className="text-sm text-gray-500">{fileName}</span>
-                  <button
-                    className="mt-2 text-red-500 text-sm"
-                    onClick={() => {
-                      URL.revokeObjectURL(logo);
-                      setLogo(null);
-                      setFileType(null);
-                      setFileName("");
-                    }}
-                  >
-                    Remover
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <Upload className="h-12 w-12 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500 mb-2">
-                    Clique para selecionar ou arraste um arquivo aqui
-                  </p>
-                  <input
-                    type="file"
-                    accept="image/*, video/mp4"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                    id="logo-upload"
-                  />
-                  <label
-                    htmlFor="logo-upload"
-                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer"
-                  >
-                    Selecionar Arquivo
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
+          <LogoUploader
+            logo={logo}
+            fileType={fileType}
+            fileName={fileName}
+            handleLogoUpload={handleLogoUpload}
+            handleRemoveLogo={handleRemoveLogo}
+          />
 
           {/* Botão de envio */}
           <div className="flex justify-center">
