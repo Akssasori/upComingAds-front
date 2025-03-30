@@ -189,7 +189,14 @@ const AlocucaoDesigner = () => {
       }
 
       const data = await response.json();
-      setLocucaoGerada(data.resposta || data.message || JSON.stringify(data));
+      let textoGerado = data.resposta || data.message || JSON.stringify(data);
+      // Remover aspas do início e do fim do texto, se existirem
+      textoGerado = textoGerado.trim();
+      if (textoGerado.startsWith('"') && textoGerado.endsWith('"')) {
+        textoGerado = textoGerado.substring(1, textoGerado.length - 1);
+      }
+
+      setLocucaoGerada(textoGerado);
     } catch (error) {
       console.error("Erro ao gerar locução:", error);
       setErroApi(`Falha ao conectar com a API: ${error.message}`);
@@ -201,13 +208,17 @@ const AlocucaoDesigner = () => {
   // Função para enviar dados ao backend
   const enviarParaBackend = async () => {
     if (
-      !texto ||
       !locutorSelecionado ||
       !musicaSelecionada ||
       !videoSelecionado ||
       !logo
     ) {
       alert("Por favor, preencha todos os campos antes de enviar.");
+      return;
+    }
+
+    if (!locucaoGerada) {
+      alert("Por favor, gere uma locução antes de enviar.");
       return;
     }
 
@@ -246,7 +257,7 @@ const AlocucaoDesigner = () => {
       }
 
       const jsonData = {
-        texto: texto,
+        texto: locucaoGerada,
         locutorUuid: locutorObj.uuid,
         musicaCaminho: musicaCaminho,
         videoPath: videoPath,
@@ -294,33 +305,7 @@ const AlocucaoDesigner = () => {
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h1 className="text-2xl font-bold mb-6 text-center">upComingAds</h1>
 
-      <div className="mb-6">
-        <div className="flex items-center mb-4">
-          <h2 className="text-lg font-semibold">Deseja criar uma alocução?</h2>
-          <div className="ml-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                checked={criarAlocucao}
-                onChange={() => setCriarAlocucao(true)}
-                className="h-4 w-4"
-              />
-              <span className="ml-2">Sim</span>
-            </label>
-            <label className="inline-flex items-center ml-4">
-              <input
-                type="radio"
-                checked={!criarAlocucao}
-                onChange={() => setCriarAlocucao(false)}
-                className="h-4 w-4"
-              />
-              <span className="ml-2">Não</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {criarAlocucao ? (
+      {
         <>
           {/* Área de texto */}
           <TextAreaInput texto={texto} setTexto={setTexto} />
@@ -435,12 +420,7 @@ const AlocucaoDesigner = () => {
             </button>
           </div>
         </>
-      ) : (
-        <div className="text-center p-10 bg-gray-50 rounded-md">
-          <Info className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-          <p>Selecione "Sim" para começar a criar uma alocução.</p>
-        </div>
-      )}
+      }
     </div>
   );
 };
