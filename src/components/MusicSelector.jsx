@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Info, Upload, Play, Pause, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 
 const MusicSelector = ({ musicas, musicaSelecionada, setMusicaSelecionada, toggleMusica, isPlaying }) => (
     <div className="mb-6">
